@@ -337,7 +337,8 @@ if __name__ == '__main__':
     ax.set_ylabel('angle')  # Add a y-label to the axes.
     ax.set_title("Right elbow angle")  # Add a title to the axes.
     ax.legend()
-    plt.savefig(args.plot+'.png')
+    if args.plot != 'none':
+        plt.savefig(args.plot+'.png')
     cv2.destroyAllWindows()
 logger.debug('finished+')
 
