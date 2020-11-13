@@ -1,7 +1,7 @@
 import argparse
 import logging
 import time
-from xlwt import Workbook 
+# from xlwt import Workbook 
 
 
 import cv2
@@ -12,7 +12,7 @@ from scipy.signal import find_peaks_cwt
 import scipy.signal as signal
 from scipy.interpolate import make_interp_spline, BSpline
 from matplotlib.pyplot import plot, scatter, show
-from sklearn.metrics import mean_squared_error 
+from sklearn.metrics import mean_squared_error , mean_absolute_error
 
 from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
@@ -26,12 +26,12 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 fps_time = 0
-workbook = Workbook()
-position = workbook.add_sheet("Part_Position")
-position.write(0, 0, 'body part') 
-position.write(0, 1, 'x') 
-position.write(0, 2, 'y') 
-position.write(0, 3, 'frame') 
+# workbook = Workbook()
+# position = workbook.add_sheet("Part_Position")
+# position.write(0, 0, 'body part') 
+# position.write(0, 1, 'x') 
+# position.write(0, 2, 'y') 
+# position.write(0, 3, 'frame') 
 whole_pos = []
 
 import sys
@@ -41,6 +41,7 @@ from numpy import NaN, Inf, arange, isscalar, asarray, array
 
 def dot(vA, vB):
     return vA[0]*vB[0]+vA[1]*vB[1]
+
 def ang(lineA, lineB):
     # Get nicer vector form
     vA = [(lineA[0][0]-lineA[1][0]), (lineA[0][1]-lineA[1][1])]
@@ -290,14 +291,18 @@ if __name__ == '__main__':
     all_angle = np.array(all_angle)
     angle_frame = np.array(angle_frame)
     angle_frame_new = np.linspace(angle_frame.min(), angle_frame.max(), 200) 
+
     #define spline
     spl = make_interp_spline(angle_frame, all_angle, k=3)
     all_angle_smooth = spl(angle_frame_new)
 
+    #array of local maximas
     peaks = find_peaks_cwt(all_angle_smooth, np.arange(10,50))
     # minima = np.r_[True, all_angle_smooth[1:] < all_angle_smooth[:-1]] & np.r_[all_angle_smooth[:-1] < all_angle_smooth[1:], True]
     # minima = signal.argrelextrema(all_angle_smooth, np.less)
     minima = np.where((all_angle_smooth[1:-1] < all_angle_smooth[0:-2]) * (all_angle_smooth[1:-1] < all_angle_smooth[2:]))[0] + 1
+
+    #array of local minima
     new_minima = []
     for m in minima: 
         if all_angle_smooth[m] < 80 : 
@@ -324,8 +329,8 @@ if __name__ == '__main__':
     print('local minima',all_angle_smooth[new_minima])
     maxima_true = [175]*len(all_angle_smooth[peaks])
     minima_true = [20]*len(all_angle_smooth[new_minima])
-    maxima_error = mean_squared_error(maxima_true,all_angle_smooth[peaks])
-    minima_error = mean_squared_error(minima_true,all_angle_smooth[new_minima])
+    maxima_error = mean_absolute_error(maxima_true,all_angle_smooth[peaks])
+    minima_error = mean_absolute_error(minima_true,all_angle_smooth[new_minima])
     print('maxima error =',maxima_error)
     print('minima error =',minima_error)
 
